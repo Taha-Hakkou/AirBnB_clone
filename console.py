@@ -78,6 +78,7 @@ class HBNBCommand(cmd.Cmd):
             print("** no instance found **")
         else:
             storage.all().pop(f"{args[0]}.{args[1]}")
+            storage.save()
 
     def do_all(self, arg):
         'Prints all string representation of all instances'
