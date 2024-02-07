@@ -2,7 +2,10 @@
 """
 HBnB Console
 """
-import cmd, sys
+import cmd
+import sys
+from datetime import datetime
+import shlex
 from models.base_model import BaseModel
 from models.user import User
 from models.state import State
@@ -11,11 +14,13 @@ from models.review import Review
 from models.amenity import Amenity
 from models.place import Place
 from models.engine.file_storage import FileStorage
+from models import storage
 
 
 cls = {'BaseModel': BaseModel, 'User': User,
-        'Amenity': Amenity, 'City': City, 'State': State,
-        'Place': Place, 'Review': Review}
+       'Amenity': Amenity, 'City': City, 'State': State,
+       'Place': Place, 'Review': Review}
+
 
 class HBNBCommand(cmd.Cmd):
     """"""
@@ -35,8 +40,8 @@ class HBNBCommand(cmd.Cmd):
 
     ###########################
     def do_create(self, arg):
-        'create'
-        args = arg.split()
+        'Creates a new instance of BaseModel'
+        args = shlex.split(arg)
         if len(args) == 0:
             print("** class name missing **")
         elif args[0] not in cls.keys():
@@ -47,66 +52,76 @@ class HBNBCommand(cmd.Cmd):
             print(f"{obj.id}")
 
     def do_show(self, arg):
-        'show'
-        args = arg.split()
+        'Prints the string representation of an instance'
+        args = shlex.split(arg)
         if len(args) == 0:
             print("** class name missing **")
         elif args[0] not in cls.keys():
             print("** class doesn't exist **")
         elif len(args) == 1:
             print("** instance id missing **")
-        elif f"{args[0]}.{args[1]}" not in FileStorage.__objects.keys():
+        elif f"{args[0]}.{args[1]}" not in storage.all():
             print("** no instance found **")
         else:
-            print(FileStorage.__objects[f"{args[0]}.{args[1]}"])
+            print(storage.all()[f"{args[0]}.{args[1]}"])
 
     def do_destroy(self, arg):
-        'destroy'
-        args = arg.split()
+        'Deletes an instance'
+        args = shlex.split(arg)
         if len(args) == 0:
             print("** class name missing **")
-        elif clsname not in cls.keys():
+        elif args[0] not in cls.keys():
             print("** class doesn't exist **")
         elif len(args) == 1:
             print("** instance id missing **")
-        elif f"{args[0]}.{args[1]}" not in FileStorage.__objects.keys():
+        elif f"{args[0]}.{args[1]}" not in storage.all():
             print("** no instance found **")
         else:
-            FileStorage.__objects.pop(f"{args[0]}.{args[1]}")
+            storage.all().pop(f"{args[0]}.{args[1]}")
 
     def do_all(self, arg):
-        'all'
-        args = arg.split()
+        'Prints all string representation of all instances'
+        args = shlex.split(arg)
+        myObjects = []
         if len(args) == 0:
-            for obj in FileStorage.__objects.values():
-                print(obj)
+            for obj in storage.all().values():
+                myObjects.append(obj.__str__())
+            print(myObjects)
         elif args[0] not in cls.keys():
             print("** class doesn't exist **")
         else:
-            for obj in FileStorage.__objects.values():
+            for obj in storage.all().values():
                 if obj.__class__.__name__ == args[0]:
-                    print(obj)
+                    myObjects.append(obj.__str__())
+            print(myObjects)
 
     def do_update(self, arg):
-        'update'
-        args = arg.split()
-        clsname, id, attr, value = args[0], args[1], args[2], args[3]
+        'Updates an instance'
+        args = shlex.split(arg)
         if len(args) == 0:
             print("** class name missing **")
-        elif clsname not in cls.keys():
+        elif args[0] not in cls.keys():
             print("** class doesn't exist **")
         elif len(args) == 1:
             print("** instance id missing **")
-        elif f"{args[0]}.{args[1]}" not in FileStorage.__objects.keys():
+        elif f"{args[0]}.{args[1]}" not in storage.all():
             print("** no instance found **")
         elif len(args) == 2:
             print("** attribute name missing **")
         elif len(args) == 3:
             print("** value missing **")
         else:
-            obj = FileStorage.__objects[f"{args[0]}.{args[1]}"]
-            setattr(obj, args[2], type(getattr(obj, args[2]))(value))
-            obj.save()
+            obj = storage.all()[f"{args[0]}.{args[1]}"]
+            try:
+                # if instance has that attribute
+                otype = type(obj.__dict__[args[2]])
+                obj.__dict__[args[2]] = otype(args[3])
+            except KeyError:
+                obj.__dict__[args[2]] = args[3]
+            finally:
+                obj.updated_at = datetime.now()
+                storage.save()
+
 
 if __name__ == "__main__":
     HBNBCommand().cmdloop()
