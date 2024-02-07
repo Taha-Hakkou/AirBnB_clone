@@ -32,8 +32,8 @@ class FileStorage:
                       in FileStorage.__objects.items()}, file)
 
     def reload(self):
-        'deserializes the JSON file to __objects
-        if JSON file __file_path exists'
+        '''deserializes the JSON file to __objects
+        if JSON file __file_path exists'''
         try:
             with open(FileStorage.__file_path, 'r', encoding='utf-8') as file:
                 FileStorage.__objects = {k: eval(v["__class__"])(**v) for k, v
